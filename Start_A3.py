@@ -4,10 +4,6 @@
 
 from socket import *
 from time import sleep
-"""
-What are missing 05.10.20
-Joke function
-"""
 
 # --------------------
 # Constants
@@ -47,106 +43,110 @@ def send_command(command, arguments):
     Send one command to the chat server.
     :param command: The command to send (login, sync, msg, ...(
     :param arguments: The arguments for the command as a string, or None if no arguments are needed
-        (username, message text, etc). Finiseh!!!
+        (username, message text, etc). 
     :return:
     """
-    global client_socket  #Trenger denne til å sende
+    global client_socket  
 
-    what_to_send = str(command) + " " + str(arguments) + "\n" #Slår sammen kommandoen og argumentet i en string. + newline
+    what_to_send = str(command) + " " + str(arguments) + "\n"
 
-    if arguments is None: #Tilfelle det ikke er noen argument
-        what_to_send = str(command) + "\n" #Må likevel legge til newline
-    client_socket.send(what_to_send.encode()) #encode og send
+    if arguments is None: 
+        what_to_send = str(command) + "\n" 
+    client_socket.send(what_to_send.encode()) 
 
-    return what_to_send #Trenger egt ikke å returnere noe
+    return what_to_send 
 
 
 
 
 def read_all_inbox():
     """
-    read the content of the inbox and return/ show all the messages
+    read the content of the inbox and return/ show all the message.
+    First it checks the number of messages in the inbox. Then it adds
+    all the messages in a list.
     :return:
     """
 
     global client_socket
 
-    newline_received = False #Ulike variabler vi behøver
+    newline_received = False
     message = ""
     new_message = ""
     message_list = []
     x=0
-    while not newline_received:  # while løkke så lenge variabelen ikke er True
-        character = client_socket.recv(1).decode()  # Leser av data med bufsize 1 og dekoder
-        if character == '\n':  # Sjekker om data inn er newline
-            print(message)   #printer hva vi har fått
-            message2 = message.strip(' inbox') #fjerner inbox fra stringen slik at vi sitter igjen
-            message2 = int(message2)           #med antallet meldinger
-            while x< message2: #While løkke som skal iterere over antallet meldinger vi har fått
-                character2 = client_socket.recv(1).decode() #Leser av data med bufsize 1 og dekoder
-                if character2 == '\n': #Sjekker om dataen er newline
-                    message_list.append(new_message)  #Legger til medlingen i lista
-                    new_message = "" #Tømmer stringen slik at adderer hver melding etter hverandre
-                    x+=1 #Øker x når vi har lagt en av meldingene
+    while not newline_received:  
+        character = client_socket.recv(1).decode()  
+        if character == '\n':  
+            print(message)  
+            message2 = message.strip(' inbox') 
+            message2 = int(message2)           
+            while x< message2: 
+                character2 = client_socket.recv(1).decode() 
+                if character2 == '\n': 
+                    message_list.append(new_message)  
+                    new_message = "" 
+                    x+=1 
                 elif character2 == '\r':
                     pass
                 else:
-                    new_message += character2 #legger hver innkommende data i en string
+                    new_message += character2 
 
-            newline_received = True  # Variabelen blir True og vi kan hoppe ut av while løkka
-        elif character == '\r':  # Eller hvis data inn er \r hobber vi videre
+            newline_received = True  
+        elif character == '\r':  
             pass
         else:
-            message += character  # Legger til dataen i stringen for meldingen
+            message += character  
 
-    return message_list #returner lista med meldinger
+    return message_list 
 
 
 def get_servers_response(respond):
     """
-    Wait until a response command is received from the server. Finished i think
+    Wait until a response command is received from the server. 
+    Reads only the first line from the server.
     :return: The response of the server, the whole line as a single string
     """
 
     newline_received = False
     message = ""
-    while not newline_received:    #while løkke så lenge variabelen ikke er True
-        character = respond.recv(1).decode() # Leser av data med bufsize 1 og dekoder
-        if character == '\n': #Sjekker om data inn er newline
-            newline_received = True #Variabelen blir True og vi kan hoppe ut av while løkka
-        elif character == '\r': # Eller hvis data inn er \r hobber vi videre
+    while not newline_received:    
+        character = respond.recv(1).decode() 
+        if character == '\n':
+            newline_received = True 
+        elif character == '\r': 
             pass
         else:
-            message += character #Legger til dataen i stringen for meldingen
-    return message #Returnerer medlingen
+            message += character 
+    return message 
 
 
 
 def connect_to_server():
     """
-    connect til serveren. endre til sync mode og
+    connect to the server. Change the connection to synchronized 
+    and wait for the server to respond with ok.
     :return:
     """
     # Must have these two lines, otherwise the function will not "see" the global variables that we will change here
     global client_socket
     global current_state
 
-    client_socket = socket(AF_INET, SOCK_STREAM) #Standard prosedyre
+    client_socket = socket(AF_INET, SOCK_STREAM) 
     try:
-        client_socket.connect(("datakomm.work", 1300)) #Prøver å koble oss til på addresse og port
-        current_state = "connected" #Hvis det går endret vi current state til å være pålogget
-    except Exception as e: #Hvis jeg får feilmelding. printer en melding på at feil
+        client_socket.connect(("datakomm.work", 1300))
+        current_state = "connected" 
+    except Exception as e: 
         print("Can't make a connection", str(e))
 
-    sync = "sync" #Kommando
+    sync = "sync" 
     try:
-        send_command(sync, None) #Prøver å sende kommandoen, og sjekker om det oppstår feil
+        send_command(sync, None) 
     except:
         print("Something went wrong")
 
-    sleep(1) #avventer litt for at programmet ikke skal rspondere raskere enn serveren 
-    connect_check = get_servers_response(client_socket) #Lagrer responsen fra serveren
-    if connect_check == "modeok\n" or 'modeok': #Sjekker om responsen er grei
+    sleep(1) 
+    connect_check = get_servers_response(client_socket) 
+    if connect_check == "modeok\n" or 'modeok': 
         print(connect_check)
     else:
         print("CONNECTION NOT IMPLEMENTED!")
@@ -161,12 +161,12 @@ def disconnect_from_server():
 
     global client_socket
     global current_state
-    try:                        #Prøver å disconnecte fra serveren
+    try:                        
         client_socket.close()
         current_state = "disconnected"
     except Exception as e:
-        print("This happened: ", str(e)) # hvis det oppstår feil printer en feilmelding
-    current_state = "disconnected" #Endrer current_state til disconnect
+        print("This happened: ", str(e)) 
+    
 
 
 def authorize():
@@ -209,19 +209,20 @@ def authorize():
 
 def voxpopuli():
     """
-    Send a public message.
+    Send a public message. Input from the user and then tries to send it.
+    Wait for the respons from the server
     :return:
     """
     global client_socket
     global current_state
-    pubmessage = input("What's on your heart?: ")  #Meldingen
-    msg = "msg"  #kommandoen
-    try:                                    #Prøver å sende kommandoen og feilmelding hvis noe går galt
+    pubmessage = input("What's on your heart?: ")  
+    msg = "msg"  
+    try:                                    
         send_command(msg, pubmessage)
     except:
         print("Message not sent")
-    sleep(1)                                        #Avventer
-    response = get_servers_response(client_socket)  #Lagrer responsen og printer
+    sleep(1)                                       
+    response = get_servers_response(client_socket)  
     print(response)
 
 
@@ -232,52 +233,53 @@ def inbox():
     """
     global client_socket
     global current_state
-    mail= "inbox" #protkollen
-    try:                        #Prøver å sende kommandoen for å se innboksen
+    mail= "inbox" 
+    try:                        
         send_command(mail, None)
-    except:                     #hvis feil oppstår print en feilmelding
+    except:                     
         print("Could not see inbox")
-    sleep(1)                       #avventer for at serveren skal få sende en respons
-    response = read_all_inbox()    #Lager innholdet i inboxen i e variabel
+    sleep(1)                       
+    response = read_all_inbox()   
     print(response)
 
 
 def privmessage():
     """
-    Send a private message to someone.
+    Send a private message to someone. The program ask what to send and to whom. 
+    Then tries to send it and wait for a respons form the server if it was successful
     :return:
     """
     global client_socket
     global current_state
 
-    privmsg = "privmsg"                                             #Kommandoen
-    to_whom = input("To whom would you like to send a message: ")   #Hvem og hva man ønsker å sende
+    privmsg = "privmsg"                                             
+    to_whom = input("To whom would you like to send a message: ")   
     messag = input("What would you like to send: ")
-    both = str(to_whom) + " " + str(messag)                         #Samler de til en variebel
-    try:                                                            #Prøver å sende, og printer en feilmelding hvis noe går galt
+    both = str(to_whom) + " " + str(messag)                         
+    try:                                                            
         send_command(privmsg, both)
     except:
         print("Something went wrong")
-    sleep(1)                                        #Avventer
-    response = get_servers_response(client_socket)  #Lagrer responsen og printer
+    sleep(1)                                        
+    response = get_servers_response(client_socket)  
     print(response)
 
 
 def list_of_all_users():
     """
-    Function to see all the users
+    Function to see all the users connected to the server at that particular moment
     :return:
     """
     global client_socket
     global current_state
 
-    users = "users"                 #kommendoen
-    try:                            #Prøver å sende kommandoen og printer hvis noe går galt
+    users = "users"                
+    try:                           
         send_command(users, None)
     except:
         print("Something went wrong")
-    sleep(1)                                        #Avventer
-    response = get_servers_response(client_socket)  #Lagrer responsen og printer den
+    sleep(1)                                        
+    response = get_servers_response(client_socket)  
     print(response)
 
     return response
@@ -331,9 +333,6 @@ available_actions = [
     {
         "description": "Get a joke",
         "valid_states": ["connected", "authorized"],
-        # TODO - optional step - implement the joke fetching from the server.
-        # Hint: this part is not described in the protocol. But the command is simple. Try to find
-        # out how it works ;)
         "function": None
     },
     {
